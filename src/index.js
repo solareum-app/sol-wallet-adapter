@@ -27,40 +27,40 @@ export default class Wallet extends EventEmitter {
     this._responsePromises = new Map();
   }
 
-  _handleMessage = (event) => {
+  _handleMessage = (e) => {
     // support react native, it only receive string as data
-    let e = { data: {}, ...event };
-    if (typeof event.data === 'string') {
+    // isRN will be sent embeded from the postMessage
+    let data = e.data;
+    if (typeof e.data === 'string') {
       try {
-        e.data = JSON.parse(event.data);
-        e.isReactNative = true;
+        data = JSON.parse(e.data);
       } catch {}
     }
 
     if (
-      e.isReactNative ||
+      (typeof data === 'object' && data.isRN) ||
       (this._injectedProvider && e.source === window) ||
       (e.origin === this._providerUrl.origin && e.source === this._popup)
     ) {
-      if (e.data.method === 'connected') {
-        const newPublicKey = new PublicKey(e.data.params.publicKey);
+      if (data.method === 'connected') {
+        const newPublicKey = new PublicKey(data.params.publicKey);
         if (!this._publicKey || !this._publicKey.equals(newPublicKey)) {
           if (this._publicKey && !this._publicKey.equals(newPublicKey)) {
             this._handleDisconnect();
           }
           this._publicKey = newPublicKey;
-          this._autoApprove = !!e.data.params.autoApprove;
+          this._autoApprove = !!data.params.autoApprove;
           this.emit('connect', this._publicKey);
         }
-      } else if (e.data.method === 'disconnected') {
+      } else if (data.method === 'disconnected') {
         this._handleDisconnect();
-      } else if (e.data.result || e.data.error) {
-        if (this._responsePromises.has(e.data.id)) {
-          const [resolve, reject] = this._responsePromises.get(e.data.id);
-          if (e.data.result) {
-            resolve(e.data.result);
+      } else if (data.result || data.error) {
+        if (this._responsePromises.has(data.id)) {
+          const [resolve, reject] = this._responsePromises.get(data.id);
+          if (data.result) {
+            resolve(data.result);
           } else {
-            reject(new Error(e.data.error));
+            reject(new Error(data.error));
           }
         }
       }
