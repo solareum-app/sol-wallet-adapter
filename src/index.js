@@ -27,8 +27,18 @@ export default class Wallet extends EventEmitter {
     this._responsePromises = new Map();
   }
 
-  _handleMessage = (e) => {
+  _handleMessage = (event) => {
+    // support react native, it only receive string as data
+    let e = { data: {}, ...event };
+    if (typeof event.data === 'string') {
+      try {
+        e.data = JSON.parse(event.data);
+        e.isReactNative = true;
+      } catch {}
+    }
+
     if (
+      e.isReactNative ||
       (this._injectedProvider && e.source === window) ||
       (e.origin === this._providerUrl.origin && e.source === this._popup)
     ) {
