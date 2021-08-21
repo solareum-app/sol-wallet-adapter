@@ -70,8 +70,12 @@ export default class Wallet extends EventEmitter {
   _handleConnect = () => {
     if (!this._handlerAdded) {
       this._handlerAdded = true;
-      window.addEventListener('message', this._handleMessage);
-      window.addEventListener('beforeunload', this.disconnect);
+      const isUIWebView = /\(ip.*applewebkit(?!.*(version|crios))/i.test(
+        navigator.userAgent,
+      );
+      const receiver = isUIWebView ? window : document;
+      receiver.addEventListener('message', this._handleMessage);
+      receiver.addEventListener('beforeunload', this.disconnect);
     }
     if (this._injectedProvider) {
       return new Promise((resolve) => {
